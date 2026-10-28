@@ -1,3 +1,18 @@
+# Modeling Gas-Solid Phase Chemical Kinetics with ChemKANs
+
+**Sara Milla** — TU Wien, Interdisciplinary Project in Data Science
+Supervisor: Ass. Prof. DI Dr. Markus Bösenhofer
+
+This project adapts ChemKAN to gas-solid reactions (carbon combustion
+with Thiele Based Models, iron ore reduction with Layer Models).
+It builds on Berke Bankoglu's PyTorch reproduction of ChemKAN,
+which this repository is forked from.
+
+- My work: [`gas_solid/`](gas_solid/) and [`docs/gas_solid/`](docs/gas_solid/)
+- Project log: [`docs/gas_solid/project_log.md`](docs/gas_solid/project_log.md)
+- Original reproduction documentation: see below.
+
+---
 # ChemKAN — Reproduction and Extension
 
 A PyTorch reproduction and extension of **ChemKAN** (*ChemKANs for combustion chemistry modeling and acceleration*, Koenig, Kim & Deng, *Physical Chemistry Chemical Physics*, 2025). ChemKAN represents chemical reaction dynamics with a physics-informed Kolmogorov–Arnold network (KAN) inside an ordinary differential equation (ODE) solver.
