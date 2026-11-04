@@ -6,3 +6,7 @@
      (bit-exact data comparison, deleting an open log file).
    - Ran scripts/train.py (biodiesel, 156 params, 1000 epochs):
      train MSE 5.4e-4, test MSE 1.6e-3, still decreasing.
+
+  ## 2026-11-04
+   **Done:** Worked through Berke's notebooks 01–04 and train.py.
+   **Learned:** ChemKAN learns the rate rule; the TBM will produce the training curves.
