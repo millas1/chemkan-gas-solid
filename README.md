@@ -8,8 +8,8 @@ with Thiele Based Models, iron ore reduction with Layer Models).
 It builds on Berke Bankoglu's PyTorch reproduction of ChemKAN,
 which this repository is forked from.
 
-- My work: [`gas_solid/`](gas_solid/) and [`docs/gas_solid/`](docs/gas_solid/)
-- Project log: [`docs/gas_solid/project_log.md`](docs/gas_solid/project_log.md)
+- My work: [`gas_solid/`](gas_solid/)
+- Project log: [`gas_solid/documents/project_log.md`](gas_solid/documents/project_log.md)
 - Original reproduction documentation: see below.
 
 ---
