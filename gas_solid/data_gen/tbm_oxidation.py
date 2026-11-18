@@ -2,6 +2,7 @@ import cantera as ct
 import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 # constants
 R = 8.314462618        # J/(mol K)
@@ -10,11 +11,11 @@ M_C = 0.012            # kg/mol
 
 settings = {
     # parameter ranges
-    "T_range" : (300, 3000),        #K
-    "P_range" : (0, 10),            #bar
-    "U_range" : (0, 150),           #m/s
+    "T_range" : (300, 3000),          #K
+    "P_range" : (0.1e5, 10e5),            #Pa (0.1-10) bar
+    "U_range" : (0.1, 150),           #m/s
     "x_o2_range" : (0.05, 0.30),    #mole fraction o2, rest n2
-    "alpha_range" : (0, 0.7),       #alpha
+    "alpha_range" : (0.1, 0.7),       #alpha
 
     # fixed values
     "d_p": 0.01,                        # m, particle diameter. ASSUMPTION
@@ -69,8 +70,11 @@ def pores(T, P, x_O2, D_O2, settings):
     n = settings["n_ox"]
     phi = (settings["d_p"]/2) * np.sqrt((n+1)/2 * k_i * c**(n-1) / D_eff)
 
-    # Effectiveness factor
-    eta = (3/ phi)*(1/np.tanh(phi) - 1/phi)
+    # Effectiveness factor (uses 1 - phi^2/15 for phi < 1e-3 (full formula is numerically unstable there))
+    if phi < 1e-3:
+        eta = 1 - phi**2 / 15
+    else:
+        eta = (3/ phi)*(1/np.tanh(phi) - 1/phi)
 
     return eta, k_i, c
 
@@ -154,3 +158,56 @@ def simulate(T, P, x_O2_0, U, alpha, tau, settings):
 
     return sol.y.T, t_ref
 
+# random sets of conditions from the ranges in settings
+def sample_conditions(n, rng, settings):
+    T = rng.uniform(*settings["T_range"], n)
+    P = rng.uniform(*settings["P_range"], n)
+    x_O2 = rng.uniform(*settings["x_o2_range"], n)
+    U = rng.uniform(*settings["U_range"], n)
+    alpha = rng.uniform(*settings["alpha_range"], n)
+
+    #one row per trajectory, one col per condition
+    return np.column_stack([T, P, x_O2, U, alpha])
+
+# simulate n particles with random conditions
+def generate(n, rng, tau, settings, label):
+
+    conditions = sample_conditions(n, rng, settings)
+
+    # one trajectory per particle
+    states = np.empty((n, len(tau), 3))     # (particles, time points, 3 states)
+    t_refs = np.empty(n)                    # each particle's time unit
+
+    for i in range(n):
+        T, P, x_O2_0, U, alpha = conditions[i]
+        states[i], t_refs[i] = simulate(T, P, x_O2_0, U, alpha, tau, settings)
+        print(f"{label} {i + 1}/{n}  T = {T:.0f} K  t_ref = {t_refs[i]:.2e} s")
+
+    return conditions, states, t_refs
+
+# --- generate the dataset ---
+rng = np.random.default_rng(0)               # fixed seed: same data every run
+tau = np.linspace(0, 5, 50)                  # dimensionless time grid
+
+cond_train, states_train, tref_train = generate(40, rng, tau, settings, "train")
+cond_test, states_test, tref_test = generate(10, rng, tau, settings, "test")
+
+# --- save in the format train.py reads ---
+out = Path("gas_solid/data/generated/tbm_oxidation_v1.npz")
+out.parent.mkdir(parents=True, exist_ok=True) 
+
+np.savez(
+    out,
+    # the five arrays train.py needs
+    t=tau,
+    train_states=states_train,
+    test_states=states_test,
+    train_T=cond_train[:, 0],                    # column 0 = temperature
+    test_T=cond_test[:, 0],
+    # extra information, ignored by train.py
+    train_conditions=cond_train,
+    test_conditions=cond_test,
+    train_t_ref=tref_train,
+    test_t_ref=tref_test,
+)
+print("saved", out)
