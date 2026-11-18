@@ -74,3 +74,7 @@ lightning_logs/
 # Environment variables
 .env
 .env.local
+
+
+## Gas Solid
+gas_solid/runs/

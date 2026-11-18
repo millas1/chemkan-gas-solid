@@ -30,3 +30,24 @@
   - Reaction stops when x_O2 < 1e-10.
   - Gas properties (density, viscosity, O2 diffusion coefficient) from Cantera's gri30 model.
   - Dimensionless time tau = t / t_ref, so all trajectories share one time grid
+
+  ## 2026-11-18
+
+  **Done:**
+  - Fixed pressure units (was bar = near vacuum, now Pa) and set U, alpha ranges to start at 0.1.
+  - Fixed the effectiveness factor for very small phi: the full formula is numerically
+  unstable for phi < 1e-3, so eta = 1 - phi^2/15 is used there. Before the fix, the
+  307 K particle made the solver hang.
+  - Regenerated the data: 40 train / 10 test trajectories, O2 + CO2 conserved exactly.
+  - Trained the unchanged ChemKAN (train.py, 1000 epochs) on tbm_oxidation_v1.npz -> baseline.
+  - Wrote gas_solid/analysis/plot_predictions.py to compare predictions with the TBM.
+
+  **Baseline result:**
+  - Train loss 3.7e-3, test loss 2.5e-3 (biodiesel: 5.4e-4 / 1.6e-3).
+  - Test loss lowest around epoch 700 (1.6e-3), then rising: early sign of overfitting.
+  - Plot: gas_solid/runs/tbm_baseline/predictions.png
+    - O2 and CO2: right general shape and starting slope.
+    - Timing errors, worst for the cold particle (495 K): TBM O2 hits zero sharply, ChemKAN gives a smooth tail. Small kink around tau = 1.4.
+    - O2 goes slightly negative at the end; O2 + CO2 is not conserved by ChemKAN.
+    - Carbon conversion is wrong: rises then falls, even negative. Its scale varies a lot
+    between particles (1e-5 to 1e-3), and ChemKAN doesn't know it is tied to the O2 rate.
