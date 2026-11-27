@@ -15,7 +15,7 @@ settings = {
     "P_range" : (0.1e5, 10e5),            #Pa (0.1-10) bar
     "U_range" : (0.1, 150),           #m/s
     "x_o2_range" : (0.05, 0.30),    #mole fraction o2, rest n2
-    "alpha_range" : (0.1, 0.7),       #alpha
+    "alpha_range" : (0.5, 0.5),       #alpha
 
     # fixed values
     "d_p": 0.01,                        # m, particle diameter. ASSUMPTION
@@ -60,14 +60,15 @@ def pores(T, P, x_O2, D_O2, settings):
     # Effective diffusion
     D_eff = 1 / ((1/D_K) + (1/D_O2))
 
-    # Rate constant
-    k_i = settings["A_ox"] *np.exp(-settings["TA_ox"]/T)
+    # Rate constant (per m3 of particle). 
+    # convert to mol units, so it fits c in mol/m3 everywhere else: factor 1000^(1-n)
+    n = settings["n_ox"]
+    k_i = settings["A_ox"] * np.exp(-settings["TA_ox"]/T) * 1000**(1 - n)
 
     # O2 concentration
     c = (x_O2 * P) / (R*T)
 
     # Thiele Modulus
-    n = settings["n_ox"]
     phi = (settings["d_p"]/2) * np.sqrt((n+1)/2 * k_i * c**(n-1) / D_eff)
 
     # Effectiveness factor (uses 1 - phi^2/15 for phi < 1e-3 (full formula is numerically unstable there))
@@ -87,7 +88,8 @@ def oxidation_rate(T, P, x_O2, x_CO2, U, alpha, settings):
     eta, k_i, c = pores(T, P, x_O2, D_O2, settings)
 
     resistence_bl = 1/(beta*np.pi*d_p**2*c**(1-n))
-    resistence_chem = 1/(eta*k_i)
+    V_p = np.pi/6 * d_p**3                    # particle volume, m3
+    resistence_chem = 1/(eta*k_i*V_p)         # k_i is per m3 of particle
     k_eff = 1/(resistence_bl + resistence_chem)
     rate = k_eff*c**(n)
 
@@ -100,7 +102,7 @@ def amounts(T, P, alpha, settings):
     V_p = np.pi/6 * settings["d_p"]**3
 
     # gas volume
-    V_gas = V_p*alpha / (1-alpha)
+    V_gas = V_p*(1-alpha) / alpha
 
     # moles of gas
     n_gas = P*V_gas / (R*T)
