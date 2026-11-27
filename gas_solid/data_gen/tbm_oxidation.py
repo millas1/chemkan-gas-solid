@@ -179,20 +179,23 @@ def generate(n, rng, tau, settings, label):
     # one trajectory per particle
     states = np.empty((n, len(tau), 3))     # (particles, time points, 3 states)
     t_refs = np.empty(n)                    # each particle's time unit
+    ratios = np.empty(n)                    # NEW: moles of gas / moles of carbon
 
     for i in range(n):
         T, P, x_O2_0, U, alpha = conditions[i]
         states[i], t_refs[i] = simulate(T, P, x_O2_0, U, alpha, tau, settings)
+        n_gas, n_C0 = amounts(T, P, alpha, settings)
+        ratios[i] = n_gas / n_C0
         print(f"{label} {i + 1}/{n}  T = {T:.0f} K  t_ref = {t_refs[i]:.2e} s")
 
-    return conditions, states, t_refs
+    return conditions, states, t_refs, ratios              # NEW: also return ratios
 
 # --- generate the dataset ---
 rng = np.random.default_rng(0)               # fixed seed: same data every run
 tau = np.linspace(0, 5, 50)                  # dimensionless time grid
 
-cond_train, states_train, tref_train = generate(40, rng, tau, settings, "train")
-cond_test, states_test, tref_test = generate(10, rng, tau, settings, "test")
+cond_train, states_train, tref_train, ratio_train = generate(40, rng, tau, settings, "train")
+cond_test, states_test, tref_test, ratio_test = generate(10, rng, tau, settings, "test")
 
 # --- save in the format train.py reads ---
 out = Path("gas_solid/data/generated/tbm_oxidation_v1.npz")
@@ -211,5 +214,7 @@ np.savez(
     test_conditions=cond_test,
     train_t_ref=tref_train,
     test_t_ref=tref_test,
+    train_gas_to_carbon=ratio_train,
+    test_gas_to_carbon=ratio_test,
 )
 print("saved", out)
